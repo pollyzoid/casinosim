@@ -1,9 +1,7 @@
 import time
 import random
 from casinobot import blackjack, player
-import strategy
-import betting
-import stats
+from simulator import strategy, betting, stats
 
 
 class Phenny:
