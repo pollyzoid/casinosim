@@ -8,7 +8,7 @@ from simulator import simulator, strategy, betting, stats
 BETTING_SYSTEMS = {
     "none": betting.NoBetting,
     "martingale": betting.Martingale,
-    "flowplay": betting.FlowPlayBetting,
+    "fp": betting.FPBetting,
     "simple": betting.SimpleBetting
 }
 
@@ -74,6 +74,10 @@ def usage(file):
 
 
 def main():
+    if len(sys.argv) < 2:
+        usage(sys.argv[0])
+        sys.exit(1)
+    
     try:
         opts, _ = getopt.getopt(sys.argv[1:], "hvs:i:g:b:o:r:t:", [
             "help", "verbose", "strat=", "iterations=", "gold=", "bet-system=", "bet-options=", "list-bet-systems", "rounds=", "target="])
@@ -132,6 +136,10 @@ def main():
     if bet_system_name not in BETTING_SYSTEMS:
         print("Invalid betting system '{}'".format(bet_system_name))
         print("Available systems:", ", ".join(sorted(BETTING_SYSTEMS.keys())))
+        sys.exit(1)
+
+    if bet_system_name != "none" and starting_gold == 0:
+        print("gold required to use a betting system")
         sys.exit(1)
 
     bet_system = BETTING_SYSTEMS[bet_system_name].from_options(bet_options)

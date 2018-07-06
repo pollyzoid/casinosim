@@ -67,6 +67,11 @@ class BlackjackHooks:
 
         self.print("Betting:", bet)
 
+        if self.betting.end_reason is not None:
+            self.end_reason = self.betting.end_reason
+            self.end = True
+            return
+
         if pl.gold < bet:
             self.end_reason = "Ran out of gold."
             self.end = True
@@ -162,14 +167,14 @@ class BlackjackHooks:
             bj.hit(pid)
         elif st == 'S':
             bj.stand(pid)
-        elif st == 'P':
+        elif st == 'P' and self.betting.can_double():
             if pl.gold < pl.bet:
                 print("Not enough gold to split")
             if not bj.accept_split:
                 raise RuntimeError("Unable to split for some reason")
             bj.split(pid)
         elif st == 'D' or st == 'Dh':
-            if bj.accept_doubledown:
+            if bj.accept_doubledown and self.betting.can_double():
                 if pl.gold < pl.bet:
                     print("Not enough gold to doubledown")
                 bj.doubledown(pid)
@@ -186,7 +191,7 @@ class BlackjackHooks:
             else:
                 bj.stand(pid)
         elif st == 'Ds':
-            if bj.accept_doubledown:
+            if bj.accept_doubledown and self.betting.can_double():
                 bj.doubledown(pid)
             else:
                 bj.stand(pid)
@@ -197,9 +202,9 @@ class BlackjackHooks:
                 bj.hit(pid)
         elif st == '?':
             actions = [bj.stand, bj.hit]
-            if bj.accept_doubledown:
+            if bj.accept_doubledown and self.betting.can_double():
                 actions.append(bj.doubledown)
-            if bj.accept_split:
+            if bj.accept_split and self.betting.can_double():
                 actions.append(bj.split)
             if bj.accept_surrender:
                 actions.append(bj.surrender)
@@ -231,14 +236,16 @@ class BlackjackSimulator:
         self.hooks = BlackjackHooks(self.strat, self.bet_system, self.output)
         self.player.hooks = self.hooks
         self.stats = stats.BlackjackStats()
-        self.bet_system.reset()
         self.reset_gold()
+        self.bet_system.set_player(self.player)
+        self.bet_system.reset()
 
     def reset_gold(self):
         self.player.gold = self.starting_gold
         self.stats.gold_start = self.starting_gold
         self.stats.gold_max = self.starting_gold
         self.stats.gold_min = self.starting_gold
+        self.bet_system.set_starting_gold(self.starting_gold)
 
     def set_starting_gold(self, gold):
         self.starting_gold = gold
@@ -246,9 +253,6 @@ class BlackjackSimulator:
 
     def set_target_gold(self, target):
         self.target_gold = target
-
-    def set_rounds(self, rounds):
-        self.rounds = rounds
 
     def print(self, *args):
         if self.output is not None:
@@ -262,8 +266,8 @@ class BlackjackSimulator:
             bj = blackjack.Game(self.phenny, 1, self.name, self.hooks)
             del bj
             curr_round += 1
-            if self.rounds > 0 and curr_round >= self.rounds:
-                end_reason = "Finished rounds"
+            if rounds > 0 and curr_round >= rounds:
+                end_reason = "Finished rounds."
                 break
             if self.starting_gold > 0:
                 if self.player.gold > self.stats.gold_max:
@@ -271,7 +275,7 @@ class BlackjackSimulator:
                 if self.player.gold < self.stats.gold_min:
                     self.stats.gold_min = self.player.gold
                 if self.target_gold > 0 and self.player.gold >= self.target_gold:
-                    end_reason = 'Reached target gold'
+                    end_reason = 'Reached target gold.'
                     break
             if self.hooks.end:
                 end_reason = self.hooks.end_reason
