@@ -1,6 +1,7 @@
 import math
 import random
 
+
 class BettingSystem:
     def __init__(self):
         self.starting_gold = 0
@@ -21,7 +22,7 @@ class BettingSystem:
     @staticmethod
     def from_options(options):
         return BettingSystem()
-    
+
     def can_double(self):
         return True
 
@@ -30,7 +31,7 @@ class BettingSystem:
 
     def set_starting_gold(self, gold):
         self.starting_gold = gold
-    
+
     def set_player(self, pl):
         self.player = pl
 
@@ -108,7 +109,6 @@ class FPBetting(BettingSystem):
     def __init__(self, stacks, levels, stack_multi, bet_multi):
         BettingSystem.__init__(self)
 
-        self.total_gold = 0
         self.stacks = stacks
         self.levels = levels
 
@@ -134,24 +134,23 @@ class FPBetting(BettingSystem):
             if o not in opts:
                 missing.append(o)
         if len(missing) > 0:
-            raise RuntimeError("FP requires options: {}".format(",".join(missing)))
+            raise RuntimeError(
+                "FP requires options: {}".format(",".join(missing)))
         return FPBetting(int(opts['stacks']), int(opts['levels']), float(opts['stack-multi']), float(opts['bet-multi']))
 
     def reset(self):
         BettingSystem.reset(self)
-        #print("reset")
         self.stacks = []
         self.first_stack()
-    
+
     def can_double(self):
         return self.current_stack >= self.next_bet
-    
+
     def first_stack(self):
         self.current_stack = math.floor(self.player.gold/self.total_div)
         self.stacks.append(self.current_stack)
         self.next_bet = math.floor(self.current_stack/self.stack_divider)
-        #print("first stack", self.current_stack)
-    
+
     def next_stack(self):
         old_left = self.current_stack
         prev_stack = self.stacks[-1]
@@ -160,17 +159,17 @@ class FPBetting(BettingSystem):
         self.next_bet = math.floor(self.current_stack/self.stack_divider)
 
         if self.current_stack > self.player.gold:
-            #print("fuck")
+            # print("fuck")
             self.end_reason = "Ran out of gold."
             return
-        
+
         # print("stack ended, start new stack", self.current_stack)
         # print("", "prev stack", prev_stack)
         # print("", "leftovers", old_left)
         # print("", "new stack with leftovers", self.current_stack + old_left)
         # print("", "total left", self.player.gold)
         self.current_stack += old_left
-    
+
     def rewind_stack(self):
         # print("rewinding stack", self.current_stack)
         # print("", "total left", self.player.gold)
@@ -232,7 +231,7 @@ def test_thing():
         fpb.on_loss()
     for _ in range(200):
         fpb.on_win()
-    #for _ in range(16):
+    # for _ in range(16):
     #    fpb.on_loss()
 
 
