@@ -65,6 +65,10 @@ class BlackjackHooks:
         bet = self.betting.get_next_bet()
         pl = player.players[1]
 
+        if bet == 0:
+            self.end_reason = "Infinite loop: zero gold bets."
+            self.end = True
+        
         self.print("Betting:", bet)
 
         if self.betting.end_reason is not None:
