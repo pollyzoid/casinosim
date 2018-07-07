@@ -77,20 +77,27 @@ def main():
     if len(sys.argv) < 2:
         usage(sys.argv[0])
         sys.exit(1)
-    
+
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "hvs:i:g:b:o:r:t:", [
-            "help", "verbose", "strat=", "iterations=", "gold=", "bet-system=", "bet-options=", "list-bet-systems", "rounds=", "target="])
+        opts, _ = getopt.getopt(sys.argv[1:], "hvf:s:i:g:b:o:r:t:", [
+            "help", "verbose", "out-file=", "strat=", "iterations=", "gold=", "bet-system=", "bet-options=", "list-bet-systems", "rounds=", "target="])
     except getopt.GetoptError as err:
         print(err)
         usage(sys.argv[0])
         sys.exit(2)
 
     verbose = False
+    out_file = None
 
-    def verbose_print(*args):
+    def verbose_print(*args, **kwargs):
         if verbose:
-            print(*args)
+            print(*args, **kwargs)
+    
+    def just_print(*args, **kwargs):
+        print(*args, **kwargs)
+        if out_file is not None:
+            kwargs["file"] = out_file
+            print(*args, **kwargs)
 
     # Default options
     iterations = 1
@@ -110,6 +117,8 @@ def main():
         elif o in ('-h', '--help'):
             usage(sys.argv[0])
             sys.exit()
+        elif o in ('-f', '--out-file'):
+            out_file = open(a, mode='w')
         elif o in ('-s', '--strat'):
             strat_file = a
         elif o in ('-b', '--bet-system'):
@@ -134,36 +143,36 @@ def main():
     strat = strategy.BlackjackStrategy.from_file(strat_file, out=verbose_print)
 
     if bet_system_name not in BETTING_SYSTEMS:
-        print("Invalid betting system '{}'".format(bet_system_name))
-        print("Available systems:", ", ".join(sorted(BETTING_SYSTEMS.keys())))
+        just_print("Invalid betting system '{}'".format(bet_system_name))
+        just_print("Available systems:", ", ".join(sorted(BETTING_SYSTEMS.keys())))
         sys.exit(1)
 
     if bet_system_name != "none" and starting_gold == 0:
-        print("gold required to use a betting system")
+        just_print("gold required to use a betting system")
         sys.exit(1)
 
     bet_system = BETTING_SYSTEMS[bet_system_name].from_options(bet_options)
 
     if target_gold == 0 and rounds == 0:
-        print("At least one end condition (--target or --rounds) needs to be enabled.")
+        just_print("At least one end condition (--target or --rounds) needs to be enabled.")
         sys.exit(1)
 
-    print("Casino Simulator 9000!")
-    print("Using strat file:", strat_file)
-    print("Using betting system:", bet_system_name)
-    print("  with options:", bet_options)
+    just_print("Casino Simulator 9000!")
+    just_print("Using strat file:", strat_file)
+    just_print("Using betting system:", bet_system_name)
+    just_print("  with options:", bet_options)
 
     if starting_gold > 0:
-        print()
-        print("{:.<16}{:.>20,}".format("Starting gold", starting_gold))
+        just_print()
+        just_print("{:.<16}{:.>20,}".format("Starting gold", starting_gold))
 
     if target_gold > 0:
-        print("{:.<16}{:.>20,}".format("Gold target", target_gold))
+        just_print("{:.<16}{:.>20,}".format("Gold target", target_gold))
 
-    print("{:.<16}{:.>20,}".format("Max rounds", rounds))
+    just_print("{:.<16}{:.>20,}".format("Max rounds", rounds))
 
-    print()
-    print("Running {0} iterations of blackjack...".format(iterations))
+    just_print()
+    just_print("Running {0} iterations of blackjack...".format(iterations))
 
     # Track stats over all iterations my merging each iteration's
     # own stats instance with this one
@@ -193,22 +202,22 @@ def main():
         reasons[reason]["hands"].append(st.total_hands)
     end = time.perf_counter()
 
-    print("Completed in {:.2f}s".format(end - start))
-    print()
+    just_print("Completed in {:.2f}s".format(end - start))
+    just_print()
 
     # Display end reasons and stats
-    print("Results:")
+    just_print("Results:")
     for rs in sorted(reasons.keys()):
         s = reasons[rs]
-        print("  {:.<22}{:.>12,} ({:>6.2%})".format(
+        just_print("  {:.<22}{:.>12,} ({:>6.2%})".format(
             rs, s["count"], s["count"]/iterations))
-        # print(s["gold_end"])
-        print("    {:.<16}{:.>16,.2f}".format(
+        # just_print(s["gold_end"])
+        just_print("    {:.<16}{:.>16,.2f}".format(
             "Avg. end gold", statistics.mean(s["gold_end"])))
-        print("    {:.<16}{:.>16,.2f}".format(
+        just_print("    {:.<16}{:.>16,.2f}".format(
             "Avg. hands dealt", statistics.mean(s["hands"])))
-    print("\nStats:")
-    total_stats.print()
+    just_print("\nStats:")
+    total_stats.print(just_print)
 
 
 if __name__ == "__main__":

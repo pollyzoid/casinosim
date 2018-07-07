@@ -60,10 +60,10 @@ class BlackjackStats:
         self.surrender_streak = max(
             self.surrender_streak, other.surrender_streak)
 
-    def print(self):
+    def print(self, print_fn=print):
         for (name, stat) in OUTPUT_CONFIG:
             if name == "":
-                print()
+                print_fn()
                 continue
 
             if "gold" in stat and self.gold_start == 0:
@@ -71,9 +71,9 @@ class BlackjackStats:
 
             attr = getattr(self, stat["attr"])
             if "gold" in stat:
-                print("{:.<16}{:.>20,}".format(name, attr), end='')
+                print_fn("{:.<16}{:.>20,}".format(name, attr), end='')
             else:
-                print("{:.<16}{:.>20,}".format(name, attr), end='')
+                print_fn("{:.<16}{:.>20,}".format(name, attr), end='')
             if "percentage" in stat:
-                print(" ({:>6.2%})".format(attr/self.total_hands), end='')
-            print()
+                print_fn(" ({:>6.2%})".format(attr/self.total_hands), end='')
+            print_fn()
