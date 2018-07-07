@@ -8,6 +8,7 @@ Usage: casinosim.py [OPTION...]
 General:
   -h, --help              print this help
   -v, --verbose           print a LOT of extra info
+  -f, --out-file          output the results to a file
 
 Simulator:
   -s, --strat=FILE        playing strategy file to use (default "strats/strat.txt")
@@ -38,5 +39,5 @@ python casinosim.py --iterations=100 --rounds=100 --gold=10000 --target=12000 --
 ```
 
 ```shell
-python casinosim.py --iterations=100 --rounds=100 --gold=100000 --target=120000 --bet-system=fp --bet-options=stacks=3,levels=5,stack-multi=2.223,bet-multi=2.223
+python casinosim.py --out-file=sim.log --iterations=100 --rounds=100 --gold=100000 --target=120000 --bet-system=fp --bet-options=stacks=3,levels=5,stack-multi=2.223,bet-multi=2.223
 ```

@@ -16,6 +16,7 @@ BETTING_SYSTEMS = {
 HELP_GENERAL = [
     (['-h', '--help'], ['print this help']),
     (['-v', '--verbose'], ['print a LOT of extra info']),
+    (['-f', '--out-file'], ['output the results to a file']),
 ]
 
 
