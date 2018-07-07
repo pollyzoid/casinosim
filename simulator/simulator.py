@@ -157,7 +157,7 @@ class BlackjackHooks:
 
         # If we're already at maximum splits (or splitting is not allowed for other reasons),
         # pick a new strategy using the card value total instead of pairs.
-        if st == 'P' and not bj.accept_split:
+        if st == 'P' and (not bj.accept_split or not self.betting.can_double()):
             st = self.strat.get_strat(dealer, hand, True)
 
         self.print("Dealer:", bj.show_dealers_hand())
@@ -167,7 +167,7 @@ class BlackjackHooks:
             bj.hit(pid)
         elif st == 'S':
             bj.stand(pid)
-        elif st == 'P' and self.betting.can_double():
+        elif st == 'P':
             if pl.gold < pl.bet:
                 print("Not enough gold to split")
             if not bj.accept_split:
