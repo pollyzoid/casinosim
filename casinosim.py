@@ -218,6 +218,8 @@ def main():
             "Avg. hands dealt", statistics.mean(s["hands"])))
     just_print("\nStats:")
     total_stats.print(just_print)
+    if out_file is not None:
+        out_file.close()
 
 
 if __name__ == "__main__":
