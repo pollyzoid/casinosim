@@ -2,6 +2,8 @@ import getopt
 import sys
 import time
 import statistics
+import multiprocessing
+import math
 from simulator import simulator, strategy, betting, stats
 
 
@@ -26,7 +28,10 @@ HELP_SIMULATOR = [
      ['how many times to run the simulation until', 'an end condition is reached (default 1)']),
     (['-g', '--gold=GOLD'], ['total gold to start with, or 0 to disable gold',
                              'completely (default 0)']),
-    (['    --anti-fallacy'], ['enable anti-fallacy strat (after a loss, bet 0 until a win, repeat)'])
+    (['    --threads'],
+     ['how many processes to run the simulation on (default 0 = auto)']),
+    (['    --anti-fallacy'],
+     ['enable anti-fallacy strat (after a loss, bet 0 until a win, repeat)'])
 ]
 
 
@@ -75,6 +80,23 @@ def usage(file):
     print("  {}".format(", ".join(sorted(BETTING_SYSTEMS.keys()))))
 
 
+def worker(iterations, outq, bjs, rounds, gold):
+    total_stats = stats.BlackjackStats()
+    total_stats.gold_min = gold
+    reasons = {}
+    for _ in range(iterations):
+        bjs.reset()
+        (reason, st) = bjs.run(rounds)
+
+        total_stats.add(st)
+        if reason not in reasons:
+            reasons[reason] = {"count": 0, "gold_end": [], "hands": []}
+        reasons[reason]["count"] += 1
+        reasons[reason]["gold_end"].append(st.gold_end)
+        reasons[reason]["hands"].append(st.total_hands)
+    outq.put((reasons, total_stats))
+
+
 def main():
     if len(sys.argv) < 2:
         usage(sys.argv[0])
@@ -82,7 +104,7 @@ def main():
 
     try:
         opts, _ = getopt.getopt(sys.argv[1:], "hvf:s:i:g:b:o:r:t:", [
-            "help", "verbose", "out-file=", "strat=", "iterations=", "gold=", "bet-system=", "bet-options=", "list-bet-systems", "rounds=", "target=", "anti-fallacy"])
+            "help", "verbose", "threads=", "out-file=", "strat=", "iterations=", "gold=", "bet-system=", "bet-options=", "list-bet-systems", "rounds=", "target=", "anti-fallacy"])
     except getopt.GetoptError as err:
         print(err)
         usage(sys.argv[0])
@@ -94,7 +116,7 @@ def main():
     def verbose_print(*args, **kwargs):
         if verbose:
             print(*args, **kwargs)
-    
+
     def just_print(*args, **kwargs):
         print(*args, **kwargs)
         if out_file is not None:
@@ -114,12 +136,16 @@ def main():
     target_gold = 0
     rounds = 0
 
+    threads = 0
+
     for o, a in opts:
         if o in ('-v', '--verbose'):
             verbose = True
         elif o in ('-h', '--help'):
             usage(sys.argv[0])
             sys.exit()
+        elif o == '--threads':
+            threads = int(a)
         elif o in ('-f', '--out-file'):
             out_file = open(a, mode='w')
         elif o in ('-s', '--strat'):
@@ -145,27 +171,30 @@ def main():
         else:
             assert False, "unhandled option"
 
-    strat = strategy.BlackjackStrategy.from_file(strat_file, out=verbose_print)
-
     if bet_system_name not in BETTING_SYSTEMS:
         just_print("Invalid betting system '{}'".format(bet_system_name))
-        just_print("Available systems:", ", ".join(sorted(BETTING_SYSTEMS.keys())))
+        just_print("Available systems:", ", ".join(
+            sorted(BETTING_SYSTEMS.keys())))
         sys.exit(1)
 
     if bet_system_name != "none" and starting_gold == 0:
         just_print("gold required to use a betting system")
         sys.exit(1)
 
-    bet_system = BETTING_SYSTEMS[bet_system_name].from_options(bet_options)
-
     if target_gold == 0 and rounds == 0:
-        just_print("At least one end condition (--target or --rounds) needs to be enabled.")
+        just_print(
+            "At least one end condition (--target or --rounds) needs to be enabled.")
         sys.exit(1)
+
+    if threads == 0:
+        threads = multiprocessing.cpu_count()
 
     just_print("Casino Simulator 9000!")
     just_print("Using strat file:", strat_file)
     just_print("Using betting system:", bet_system_name)
     just_print("  with options:", bet_options)
+    if bet_anti_fallacy:
+        just_print("Using anti-fallacy strategy")
 
     if starting_gold > 0:
         just_print()
@@ -177,7 +206,8 @@ def main():
     just_print("{:.<16}{:.>20,}".format("Max rounds", rounds))
 
     just_print()
-    just_print("Running {0} iterations of blackjack...".format(iterations))
+    just_print("Running {0} iterations of blackjack using {1} processes...".format(
+        iterations, threads))
 
     # Track stats over all iterations my merging each iteration's
     # own stats instance with this one
@@ -186,26 +216,46 @@ def main():
     total_stats.gold_target = target_gold
     total_stats.gold_min = starting_gold
 
-    bj = simulator.BlackjackSimulator(strat, bet_system, out=verbose_print)
+    total_reasons = {}
+
+    def add_reasons(reasons):
+        for reason in reasons.keys():
+            if reason not in total_reasons:
+                total_reasons[reason] = reasons[reason]
+            else:
+                total_reasons[reason]["count"] += reasons[reason]["count"]
+                total_reasons[reason]["gold_end"].extend(
+                    reasons[reason]["gold_end"])
+                total_reasons[reason]["hands"].extend(reasons[reason]["hands"])
+
+    out_q = multiprocessing.Queue()
+    procs = []
+    chunksize = int(math.ceil(iterations / float(threads)))
+
+    bet_system = BETTING_SYSTEMS[bet_system_name].from_options(bet_options)
+    strat = strategy.BlackjackStrategy.from_file(strat_file)
+
+    bj = simulator.BlackjackSimulator(strat, bet_system)
     bj.set_starting_gold(starting_gold)
     bj.set_target_gold(target_gold)
     bj.set_anti_fallacy(bet_anti_fallacy)
 
     start = time.perf_counter()
-    # Track the count of each iteration end reason, plus couple other per-reason
-    # stats for displaying at the end
-    reasons = {}
-    for _ in range(0, iterations):
-        bj.reset()
+    for _ in range(threads):
+        p = multiprocessing.Process(
+            target=worker,
+            args=(chunksize, out_q, bj, rounds, starting_gold))
+        procs.append(p)
+        p.start()
 
-        (reason, st) = bj.run(rounds)
-        # Merge stats with total
+    for _ in range(threads):
+        (reasons, st) = out_q.get()
+        add_reasons(reasons)
         total_stats.add(st)
-        if reason not in reasons:
-            reasons[reason] = {"count": 0, "gold_end": [], "hands": []}
-        reasons[reason]["count"] += 1
-        reasons[reason]["gold_end"].append(st.gold_end)
-        reasons[reason]["hands"].append(st.total_hands)
+
+    for p in procs:
+        p.join()
+
     end = time.perf_counter()
 
     just_print("Completed in {:.2f}s".format(end - start))
@@ -213,8 +263,8 @@ def main():
 
     # Display end reasons and stats
     just_print("Results:")
-    for rs in sorted(reasons.keys()):
-        s = reasons[rs]
+    for rs in sorted(total_reasons.keys()):
+        s = total_reasons[rs]
         just_print("  {:.<22}{:.>12,} ({:>6.2%})".format(
             rs, s["count"], s["count"]/iterations))
         # just_print(s["gold_end"])

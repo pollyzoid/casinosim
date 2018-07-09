@@ -16,6 +16,8 @@ Simulator:
                           an end condition is reached (default 1)
   -g, --gold=GOLD         total gold to start with, or 0 to disable gold
                           completely (default 0)
+      --threads           how many processes to run the simulation on (default 0 = auto)
+      --anti-fallacy      enable anti-fallacy strat (after a loss, bet 0 until a win, repeat)
 
 Betting:
   -b, --bet-system=SYSTEM betting system to use (default "none")
