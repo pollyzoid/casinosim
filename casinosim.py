@@ -26,6 +26,7 @@ HELP_SIMULATOR = [
      ['how many times to run the simulation until', 'an end condition is reached (default 1)']),
     (['-g', '--gold=GOLD'], ['total gold to start with, or 0 to disable gold',
                              'completely (default 0)']),
+    (['    --anti-fallacy'], ['enable anti-fallacy strat (after a loss, bet 0 until a win, repeat)'])
 ]
 
 
@@ -81,7 +82,7 @@ def main():
 
     try:
         opts, _ = getopt.getopt(sys.argv[1:], "hvf:s:i:g:b:o:r:t:", [
-            "help", "verbose", "out-file=", "strat=", "iterations=", "gold=", "bet-system=", "bet-options=", "list-bet-systems", "rounds=", "target="])
+            "help", "verbose", "out-file=", "strat=", "iterations=", "gold=", "bet-system=", "bet-options=", "list-bet-systems", "rounds=", "target=", "anti-fallacy"])
     except getopt.GetoptError as err:
         print(err)
         usage(sys.argv[0])
@@ -107,13 +108,14 @@ def main():
 
     bet_system_name = "none"
     bet_options = ""
+    bet_anti_fallacy = False
 
     # End conditions, at least one should be enabled
     target_gold = 0
     rounds = 0
 
     for o, a in opts:
-        if o == '-v':
+        if o in ('-v', '--verbose'):
             verbose = True
         elif o in ('-h', '--help'):
             usage(sys.argv[0])
@@ -138,6 +140,8 @@ def main():
             starting_gold = int(a)
         elif o in ('-t', '--target'):
             target_gold = int(a)
+        elif o == '--anti-fallacy':
+            bet_anti_fallacy = True
         else:
             assert False, "unhandled option"
 
@@ -185,6 +189,7 @@ def main():
     bj = simulator.BlackjackSimulator(strat, bet_system, out=verbose_print)
     bj.set_starting_gold(starting_gold)
     bj.set_target_gold(target_gold)
+    bj.set_anti_fallacy(bet_anti_fallacy)
 
     start = time.perf_counter()
     # Track the count of each iteration end reason, plus couple other per-reason
