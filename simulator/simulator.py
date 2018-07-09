@@ -169,6 +169,7 @@ class BlackjackHooks:
         """
         self.print("choose_action", uid)
         pl = player.players[player.players[uid].uid]
+        bet = player.players[uid].bet
         pid = player.players[uid].uid
         hand = player.players[uid].hand
         dealer = player.players[0].hand.cards[1].rank
@@ -188,14 +189,14 @@ class BlackjackHooks:
         elif st == 'S':
             bj.stand(pid)
         elif st == 'P':
-            if pl.gold < pl.bet:
+            if pl.gold < bet:
                 print("Not enough gold to split")
             if not bj.accept_split:
                 raise RuntimeError("Unable to split for some reason")
             bj.split(pid)
         elif st == 'D' or st == 'Dh':
-            if bj.accept_doubledown and self.betting.can_double():
-                if pl.gold < pl.bet:
+            if bj.accept_doubledown and bet <= pl.gold and self.betting.can_double():
+                if bet > pl.gold:
                     print("Not enough gold to doubledown")
                 bj.doubledown(pid)
             else:
