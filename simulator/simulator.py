@@ -195,7 +195,7 @@ class BlackjackHooks:
                 raise RuntimeError("Unable to split for some reason")
             bj.split(pid)
         elif st == 'D' or st == 'Dh':
-            if bj.accept_doubledown and bet <= pl.gold and self.betting.can_double():
+            if bj.accept_doubledown and self.betting.can_double():
                 if bet > pl.gold:
                     print("Not enough gold to doubledown")
                 bj.doubledown(pid)
