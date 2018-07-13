@@ -10,6 +10,8 @@ from simulator import simulator, strategy, betting, stats
 BETTING_SYSTEMS = {
     "none": betting.NoBetting,
     "martingale": betting.Martingale,
+    "antimartingale": betting.AntiMartingale,
+    "idkmartingale": betting.IdkMartingale,
     "fp": betting.FPBetting,
     "simple": betting.SimpleBetting
 }
@@ -80,7 +82,7 @@ def usage(file):
     print("  {}".format(", ".join(sorted(BETTING_SYSTEMS.keys()))))
 
 
-def worker(iterations, outq, bjs, rounds, gold):
+def worker(num, iterations, outq, bjs, rounds, gold):
     total_stats = stats.BlackjackStats()
     total_stats.gold_min = gold
     reasons = {}
@@ -241,10 +243,10 @@ def main():
     bj.set_anti_fallacy(bet_anti_fallacy)
 
     start = time.perf_counter()
-    for _ in range(threads):
+    for i in range(threads):
         p = multiprocessing.Process(
             target=worker,
-            args=(chunksize, out_q, bj, rounds, starting_gold))
+            args=(i, chunksize, out_q, bj, rounds, starting_gold))
         procs.append(p)
         p.start()
 

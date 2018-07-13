@@ -105,6 +105,75 @@ class Martingale(BettingSystem):
         return self.next_bet
 
 
+class AntiMartingale(BettingSystem):
+    def __init__(self, starting):
+        BettingSystem.__init__(self)
+
+        self.starting_bet = starting
+        self.next_bet = starting
+
+    @staticmethod
+    def from_options(options):
+        opts = BettingSystem.parse_options(options)
+        if 'starting-bet' not in opts:
+            raise RuntimeError("AntiMartingale requires 'starting-bet' option")
+        return Martingale(int(opts["starting-bet"]))
+
+    def reset(self):
+        self.next_bet = self.starting_bet
+
+    def on_win(self, hands):
+        self.next_bet *= (1 + hands)
+
+    def on_loss(self, hands):
+        self.next_bet = self.starting_bet
+
+    def on_tie(self):
+        pass
+
+    def get_next_bet(self):
+        return self.next_bet
+
+
+class IdkMartingale(BettingSystem):
+    def __init__(self, starting):
+        BettingSystem.__init__(self)
+
+        self.starting_bet = starting
+        self.next_bet = starting
+        self.last_result = ""
+
+    @staticmethod
+    def from_options(options):
+        opts = BettingSystem.parse_options(options)
+        if 'starting-bet' not in opts:
+            raise RuntimeError("IdkMartingale requires 'starting-bet' option")
+        return Martingale(int(opts["starting-bet"]))
+
+    def reset(self):
+        self.next_bet = self.starting_bet
+
+    def on_win(self, hands):
+        if self.last_result == "loss":
+            self.next_bet = self.starting_bet
+        else:
+            self.next_bet *= (1 + hands)
+        self.last_result = "win"
+
+    def on_loss(self, hands):
+        if self.last_result == "win":
+            self.next_bet = self.starting_bet
+        else:
+            self.next_bet *= (1 + hands)
+        self.last_result = "loss"
+
+    def on_tie(self):
+        pass
+
+    def get_next_bet(self):
+        return self.next_bet
+
+
 class FPBetting(BettingSystem):
     def __init__(self, stacks, levels, stack_multi, bet_multi):
         BettingSystem.__init__(self)
