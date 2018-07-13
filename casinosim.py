@@ -13,6 +13,7 @@ BETTING_SYSTEMS = {
     "antimartingale": betting.AntiMartingale,
     "idkmartingale": betting.IdkMartingale,
     "fp": betting.FPBetting,
+    "fibonacci": betting.Fibonacci,
     "simple": betting.SimpleBetting
 }
 
@@ -190,6 +191,10 @@ def main():
 
     if threads == 0:
         threads = multiprocessing.cpu_count()
+    
+    # we don't need 4 threads to run 1 iteration
+    if iterations < threads:
+        threads = iterations
 
     just_print("Casino Simulator 9000!")
     just_print("Using strat file:", strat_file)

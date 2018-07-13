@@ -68,6 +68,85 @@ class SimpleBetting(BettingSystem):
         return self.bet
 
 
+class FibonacciSequence:
+    def __init__(self):
+        self.i = 0
+        self.F = [0, 1]
+    
+    def set_i(self, i):
+        self.i = i
+    
+    def get(self):
+        return self.F[self.i]
+
+    def fwd(self, n=1):
+        self.i += n
+        if self.i >= len(self.F):
+            self.calculate(self.i)
+        return self.F[self.i]
+    
+    def rwd(self, n=1):
+        self.i -= n
+        if self.i < 0:
+            self.i = 0
+        # in case `rwd` is called with negative `n`
+        if self.i >= len(self.F):
+            self.calculate(self.i)
+        return self.F[self.i]
+
+    def calculate(self, n):
+        l = len(self.F)
+        if n < l:
+            return self.F[n]
+
+        x = self.F[l-2]
+        y = self.F[l-1]
+
+        for _ in range(n-l+1):
+            x, y = y, x + y
+            self.F.append(y)
+        return self.F[n]
+
+
+class Fibonacci(BettingSystem):
+    def __init__(self, starting):
+        BettingSystem.__init__(self)
+
+        self.starting_bet = starting
+        self.next_bet = starting
+        self.fib = FibonacciSequence()
+        self.fib.calculate(20) # preload part of the sequence
+        self.fib.set_i(1) # start from 1
+
+    @staticmethod
+    def from_options(options):
+        opts = BettingSystem.parse_options(options)
+        if 'starting-bet' not in opts:
+            raise RuntimeError("Fibonacci requires 'starting-bet' option")
+        return Fibonacci(int(opts["starting-bet"]))
+
+    def reset(self):
+        self.fib.set_i(1)
+        self.next_bet = self.starting_bet
+
+    def on_win(self, hands):
+        # rewind two steps
+        self.fib.rwd(2)
+        # and make sure we don't start from 0
+        if self.fib.get() == 0:
+            self.fib.fwd()
+        self.next_bet = self.starting_bet * self.fib.get()
+
+    def on_loss(self, hands):
+        self.next_bet = self.starting_bet * self.fib.fwd(hands)
+
+    def on_tie(self):
+        pass
+
+    def get_next_bet(self):
+        return self.next_bet
+
+
 class Martingale(BettingSystem):
     def __init__(self, starting):
         BettingSystem.__init__(self)
@@ -284,24 +363,21 @@ class FPBetting(BettingSystem):
 
 
 def test_thing():
-    fpb = FPBetting(5, 8, 2.223, 2.223)
-    fpb.set_starting_gold(800000)
-    #print("bet", fpb.get_next_bet())
-    # for _ in range(40):
-    #     if fpb.total_gold < 0:
-    #         break
-    #     print()
-    #     if random.randint(1,5) == 1:
-    #         fpb.on_win()
-    #     else:
-    #         fpb.on_loss()
-    #     print("next_bet", fpb.get_next_bet())
-    for _ in range(16):
-        fpb.on_loss()
-    for _ in range(200):
-        fpb.on_win()
-    # for _ in range(16):
-    #    fpb.on_loss()
+    fib = FibonacciSequence()
+    for _ in range(5):
+        print(fib.fwd(2))
+    print()
+    for _ in range(5):
+        print(fib.rwd())
+    print()
+    for _ in range(5):
+        print(fib.fwd())
+    print()
+    for _ in range(5):
+        print(fib.rwd(2))
+    print()
+    for i in range(20):
+        print(fib.calculate(i))
 
 
 if __name__ == "__main__":
