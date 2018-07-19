@@ -1,7 +1,8 @@
-import time
 import random
+import time
+
 from casinobot import blackjack, player
-from simulator import strategy, betting, stats
+from simulator import betting, stats, strategy
 
 
 class Phenny:
@@ -45,13 +46,17 @@ class BlackjackHooks:
         self.output = out
         self.anti_fallacy = False
         self.af_trigger = False
+        self.positive_prog = False
 
         self.reset_results()
 
     def print(self, *args):
         if self.output is not None:
             self.output(*args)
-    
+
+    def set_positive_prog(self, enable):
+        self.positive_prog = enable
+
     def set_anti_fallacy(self, enable):
         """
         Enable or disable anti-fallacy strat. After a loss, it bets zero until a win, then
@@ -77,10 +82,10 @@ class BlackjackHooks:
         if bet == 0:
             self.end_reason = "Infinite loop: zero gold bets."
             self.end = True
-        
+
         if self.af_trigger:
             bet = 0
-        
+
         self.print("Betting:", bet)
 
         if self.betting.end_reason is not None:
@@ -120,7 +125,7 @@ class BlackjackHooks:
         self.losses += 1
         if surrender:
             self.surrenders += 1
-    
+
     def on_tie(self, pl):
         """
         Called when a hand is tied.
@@ -149,6 +154,8 @@ class BlackjackHooks:
         self.print("on_game_over")
         self.print("dealer:", player.players[0].hand)
         res = self.wins - self.losses
+        if self.positive_prog:
+            res = -res
         self.print("res:", res)
         if res < 0:
             self.betting.on_loss(abs(res))
@@ -247,6 +254,7 @@ class BlackjackSimulator:
         self.target_gold = 0
         self.rounds = 0
         self.anti_fallacy = False
+        self.positive_prog = False
 
         self.reset()
 
@@ -257,6 +265,7 @@ class BlackjackSimulator:
         self.player = player.players[1]
         self.hooks = BlackjackHooks(self.strat, self.bet_system, self.output)
         self.hooks.set_anti_fallacy(self.anti_fallacy)
+        self.hooks.set_positive_prog(self.positive_prog)
         self.player.hooks = self.hooks
         self.stats = stats.BlackjackStats()
         self.reset_gold()
@@ -269,7 +278,10 @@ class BlackjackSimulator:
         self.stats.gold_max = self.starting_gold
         self.stats.gold_min = self.starting_gold
         self.bet_system.set_starting_gold(self.starting_gold)
-    
+
+    def set_positive_prog(self, enable):
+        self.positive_prog = enable
+
     def set_anti_fallacy(self, enable):
         self.anti_fallacy = enable
         self.hooks.set_anti_fallacy(enable)

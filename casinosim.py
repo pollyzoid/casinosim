@@ -1,10 +1,11 @@
 import getopt
+import math
+import multiprocessing
+import statistics
 import sys
 import time
-import statistics
-import multiprocessing
-import math
-from simulator import simulator, strategy, betting, stats
+
+from simulator import betting, simulator, stats, strategy
 
 
 BETTING_SYSTEMS = {
@@ -42,6 +43,7 @@ HELP_BETTING = [
     (['-b', '--bet-system=SYSTEM'], ['betting system to use (default "none")']),
     (['-o', '--bet-options=OPTS'],
      ['comma-separated key=value list of options', 'to pass to the betting system']),
+    (['-p', '--positive-prog'], ['use positive progression instead of negative']),
     (['    --list-bet-systems'], ['list available betting systems']),
 ]
 
@@ -106,8 +108,8 @@ def main():
         sys.exit(1)
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "hvf:s:i:g:b:o:r:t:", [
-            "help", "verbose", "threads=", "out-file=", "strat=", "iterations=", "gold=", "bet-system=", "bet-options=", "list-bet-systems", "rounds=", "target=", "anti-fallacy"])
+        opts, _ = getopt.getopt(sys.argv[1:], "hvf:s:i:g:b:o:pr:t:", [
+            "help", "verbose", "threads=", "out-file=", "strat=", "iterations=", "gold=", "bet-system=", "bet-options=", "positive-prog", "list-bet-systems", "rounds=", "target=", "anti-fallacy"])
     except getopt.GetoptError as err:
         print(err)
         usage(sys.argv[0])
@@ -134,6 +136,7 @@ def main():
     bet_system_name = "none"
     bet_options = ""
     bet_anti_fallacy = False
+    bet_positive_prog = False
 
     # End conditions, at least one should be enabled
     target_gold = 0
@@ -157,6 +160,8 @@ def main():
             bet_system_name = a
         elif o in ('-o', '--bet-options'):
             bet_options = a
+        elif o in ('-p', '--positive-prog'):
+            bet_positive_prog = True
         elif o == '--list-bet-systems':
             print("Available betting systems:", ", ".join(
                 sorted(BETTING_SYSTEMS.keys())))
@@ -191,7 +196,7 @@ def main():
 
     if threads == 0:
         threads = multiprocessing.cpu_count()
-    
+
     # we don't need 4 threads to run 1 iteration
     if iterations < threads:
         threads = iterations
@@ -246,6 +251,7 @@ def main():
     bj.set_starting_gold(starting_gold)
     bj.set_target_gold(target_gold)
     bj.set_anti_fallacy(bet_anti_fallacy)
+    bj.set_positive_prog(bet_positive_prog)
 
     start = time.perf_counter()
     for i in range(threads):
