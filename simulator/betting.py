@@ -224,6 +224,70 @@ class IdkMartingale(BettingSystem):
         return self.next_bet
 
 
+class Labouchere(BettingSystem):
+    def __init__(self, starting, seq):
+        BettingSystem.__init__(self)
+
+        self.starting_bet = starting
+        self.start_seq = seq
+
+        self.reset()
+
+    @staticmethod
+    def parse_seq(seq):
+        sq = []
+        try:
+            for n in seq.strip().split('-'):
+                sq.append(int(n))
+        except ValueError:
+            raise ValueError(
+                "Sequence must be a dash (-) separated list of integers, e.g. 1-2-3-4.")
+        return sq
+
+    @classmethod
+    def from_options(cls, options):
+        opts = BettingSystem.parse_options(options)
+        missing = []
+        for o in ['starting-bet', 'seq']:
+            if o not in opts:
+                missing.append(o)
+        if len(missing) > 0:
+            raise RuntimeError(
+                cls.__name__ + " requires options: {}".format(",".join(missing)))
+        seq = Labouchere.parse_seq(opts['seq'])
+        return cls(int(opts['starting-bet']), seq)
+
+    def reset(self):
+        self.seq = self.start_seq.copy()
+        self.next_value = self.calc_next_value()
+
+    def on_win(self, hands):
+        self.remove_values()
+        self.next_value = self.calc_next_value()
+
+    def on_loss(self, hands):
+        self.seq.append(self.next_value * hands)
+        self.next_value = self.calc_next_value()
+
+    def on_tie(self):
+        pass
+
+    def calc_next_value(self):
+        if len(self.seq) == 0:
+            self.seq = self.start_seq.copy()
+        if len(self.seq) == 1:
+            return self.seq[0]
+        return self.seq[0] + self.seq[-1]
+
+    def remove_values(self):
+        if len(self.seq) == 1:
+            return self.seq.pop(0)
+        return self.seq.pop(0) + self.seq.pop()
+
+    def get_next_bet(self):
+        return self.next_value * self.starting_bet
+
+
 class FPBetting(BettingSystem):
     def __init__(self, stacks, levels, stack_multi, bet_multi):
         BettingSystem.__init__(self)

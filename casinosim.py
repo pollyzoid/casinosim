@@ -14,6 +14,7 @@ BETTING_SYSTEMS = {
     "idkmartingale": betting.IdkMartingale,
     "fp": betting.FPBetting,
     "fibonacci": betting.Fibonacci,
+    "labouchere": betting.Labouchere,
     "simple": betting.SimpleBetting
 }
 
