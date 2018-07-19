@@ -72,10 +72,10 @@ class FibonacciSequence:
     def __init__(self):
         self.i = 0
         self.F = [0, 1]
-    
+
     def set_i(self, i):
         self.i = i
-    
+
     def get(self):
         return self.F[self.i]
 
@@ -84,7 +84,7 @@ class FibonacciSequence:
         if self.i >= len(self.F):
             self.calculate(self.i)
         return self.F[self.i]
-    
+
     def rwd(self, n=1):
         self.i -= n
         if self.i < 0:
@@ -115,8 +115,8 @@ class Fibonacci(BettingSystem):
         self.starting_bet = starting
         self.next_bet = starting
         self.fib = FibonacciSequence()
-        self.fib.calculate(20) # preload part of the sequence
-        self.fib.set_i(1) # start from 1
+        self.fib.calculate(20)  # preload part of the sequence
+        self.fib.set_i(1)  # start from 1
 
     @staticmethod
     def from_options(options):
@@ -176,36 +176,6 @@ class Martingale(BettingSystem):
     def on_loss(self, hands):
         #print("on_loss", hands, self.next_bet)
         self.next_bet *= (1 + hands)
-
-    def on_tie(self):
-        pass
-
-    def get_next_bet(self):
-        return self.next_bet
-
-
-class AntiMartingale(BettingSystem):
-    def __init__(self, starting):
-        BettingSystem.__init__(self)
-
-        self.starting_bet = starting
-        self.next_bet = starting
-
-    @staticmethod
-    def from_options(options):
-        opts = BettingSystem.parse_options(options)
-        if 'starting-bet' not in opts:
-            raise RuntimeError("AntiMartingale requires 'starting-bet' option")
-        return Martingale(int(opts["starting-bet"]))
-
-    def reset(self):
-        self.next_bet = self.starting_bet
-
-    def on_win(self, hands):
-        self.next_bet *= (1 + hands)
-
-    def on_loss(self, hands):
-        self.next_bet = self.starting_bet
 
     def on_tie(self):
         pass

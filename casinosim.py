@@ -11,7 +11,6 @@ from simulator import betting, simulator, stats, strategy
 BETTING_SYSTEMS = {
     "none": betting.NoBetting,
     "martingale": betting.Martingale,
-    "antimartingale": betting.AntiMartingale,
     "idkmartingale": betting.IdkMartingale,
     "fp": betting.FPBetting,
     "fibonacci": betting.Fibonacci,
