@@ -16,12 +16,11 @@ class BettingSystem:
                 opts[kv[0]] = kv[1]
             elif len(kv) > 0:
                 opts[kv[0]] = True
-
         return opts
 
-    @staticmethod
-    def from_options(options):
-        return BettingSystem()
+    @classmethod
+    def from_options(cls, options):
+        return cls()
 
     def can_double(self):
         return True
@@ -57,12 +56,12 @@ class SimpleBetting(BettingSystem):
         BettingSystem.__init__(self)
         self.bet = bet
 
-    @staticmethod
-    def from_options(options):
+    @classmethod
+    def from_options(cls, options):
         opts = BettingSystem.parse_options(options)
         if 'bet' not in opts:
-            raise RuntimeError("SimpleBetting requires 'bet' option")
-        return SimpleBetting(int(opts["bet"]))
+            raise RuntimeError(cls.__name__ + " requires 'bet' option")
+        return cls(int(opts["bet"]))
 
     def get_next_bet(self):
         return self.bet
@@ -118,12 +117,13 @@ class Fibonacci(BettingSystem):
         self.fib.calculate(20)  # preload part of the sequence
         self.fib.set_i(1)  # start from 1
 
-    @staticmethod
-    def from_options(options):
+    @classmethod
+    def from_options(cls, options):
         opts = BettingSystem.parse_options(options)
         if 'starting-bet' not in opts:
-            raise RuntimeError("Fibonacci requires 'starting-bet' option")
-        return Fibonacci(int(opts["starting-bet"]))
+            raise RuntimeError(
+                cls.__name__ + " requires 'starting-bet' option")
+        return cls(int(opts["starting-bet"]))
 
     def reset(self):
         self.fib.set_i(1)
@@ -154,12 +154,13 @@ class Martingale(BettingSystem):
         self.starting_bet = starting
         self.next_bet = starting
 
-    @staticmethod
-    def from_options(options):
+    @classmethod
+    def from_options(cls, options):
         opts = BettingSystem.parse_options(options)
         if 'starting-bet' not in opts:
-            raise RuntimeError("Martingale requires 'starting-bet' option")
-        return Martingale(int(opts["starting-bet"]))
+            raise RuntimeError(
+                cls.__name__ + " requires 'starting-bet' option")
+        return cls(int(opts["starting-bet"]))
 
     def reset(self):
         self.next_bet = self.starting_bet
@@ -174,7 +175,6 @@ class Martingale(BettingSystem):
     # To win back the lost gold, we need to count the +-s from wins/losses: -2 from double loss, 0 from tie and
     # +1 from win, for a total of -1. Values <0 are losses, so `on_loss` is called with `hands=1`.
     def on_loss(self, hands):
-        #print("on_loss", hands, self.next_bet)
         self.next_bet *= (1 + hands)
 
     def on_tie(self):
@@ -192,12 +192,13 @@ class IdkMartingale(BettingSystem):
         self.next_bet = starting
         self.last_result = ""
 
-    @staticmethod
-    def from_options(options):
+    @classmethod
+    def from_options(cls, options):
         opts = BettingSystem.parse_options(options)
         if 'starting-bet' not in opts:
-            raise RuntimeError("IdkMartingale requires 'starting-bet' option")
-        return Martingale(int(opts["starting-bet"]))
+            raise RuntimeError(
+                cls.__name__ + " requires 'starting-bet' option")
+        return cls(int(opts["starting-bet"]))
 
     def reset(self):
         self.next_bet = self.starting_bet
@@ -244,8 +245,8 @@ class FPBetting(BettingSystem):
 
         self.stacks = []
 
-    @staticmethod
-    def from_options(options):
+    @classmethod
+    def from_options(cls, options):
         opts = BettingSystem.parse_options(options)
         missing = []
         for o in ['stacks', 'levels', 'stack-multi', 'bet-multi']:
@@ -253,8 +254,8 @@ class FPBetting(BettingSystem):
                 missing.append(o)
         if len(missing) > 0:
             raise RuntimeError(
-                "FP requires options: {}".format(",".join(missing)))
-        return FPBetting(int(opts['stacks']), int(opts['levels']), float(opts['stack-multi']), float(opts['bet-multi']))
+                cls.__name__ + " requires options: {}".format(",".join(missing)))
+        return cls(int(opts['stacks']), int(opts['levels']), float(opts['stack-multi']), float(opts['bet-multi']))
 
     def reset(self):
         BettingSystem.reset(self)
