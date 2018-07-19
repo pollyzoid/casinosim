@@ -23,6 +23,7 @@ Betting:
   -b, --bet-system=SYSTEM betting system to use (default "none")
   -o, --bet-options=OPTS  comma-separated key=value list of options
                           to pass to the betting system
+  -p, --positive-prog     use positive progression instead of negative
       --list-bet-systems  list available betting systems
 
 End conditions:
@@ -31,7 +32,7 @@ End conditions:
 
 
 Betting systems:
-  fp, martingale, none, simple
+  fibonacci, fp, idkmartingale, labouchere, martingale, none, simple
 ```
 
 ## Examples
